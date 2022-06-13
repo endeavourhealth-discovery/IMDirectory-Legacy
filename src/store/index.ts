@@ -1,8 +1,9 @@
 import { createStore } from "vuex";
+import { Auth } from "aws-amplify";
+import axios from "axios";
 import EntityService from "../services/EntityService";
-import AuthService from "@/services/AuthService";
 import { FilterDefaultsConfig, EntityReferenceNode, Namespace, HistoryItem, RecentActivityItem } from "im-library/dist/types/interfaces/Interfaces";
-import { Models, Constants, Vocabulary, Helpers, LoggerService } from "im-library";
+import { Models, Constants, Vocabulary, Helpers, LoggerService, AuthService, ConfigService } from "im-library";
 const { IM, RDF, RDFS } = Vocabulary;
 const { Avatars } = Constants;
 const {
@@ -13,7 +14,8 @@ const {
 const {
   DataTypeCheckers: { isArrayHasLength, isObjectHasKeys }
 } = Helpers;
-import vm from "@/main";
+const authService = new AuthService(Auth);
+const configService = new ConfigService(axios);
 
 export default createStore({
   // update stateType.ts when adding new state!
@@ -167,11 +169,11 @@ export default createStore({
   },
   actions: {
     async fetchBlockedIris({ commit }) {
-      const blockedIris = await vm.$configService.getXmlSchemaDataTypes();
+      const blockedIris = await configService.getXmlSchemaDataTypes();
       commit("updateBlockedIris", blockedIris);
     },
     async fetchFilterSettings({ commit, state }) {
-      const configs = await vm.$configService.getFilterDefaults();
+      const configs = await configService.getFilterDefaults();
       commit("updateFilterDefaults", configs);
       const schemeOptions = await EntityService.getNamespaces();
       const statusOptions = await EntityService.getEntityChildren(IM.STATUS);
@@ -204,7 +206,7 @@ export default createStore({
     },
     async logoutCurrentUser({ commit }) {
       let result = new CustomAlert(500, "Logout (store) failed");
-      await AuthService.signOut().then(res => {
+      await authService.signOut().then((res: any) => {
         if (res.status === 200) {
           commit("updateCurrentUser", null);
           commit("updateIsLoggedIn", false);
@@ -217,7 +219,7 @@ export default createStore({
     },
     async authenticateCurrentUser({ commit, dispatch }) {
       const result = { authenticated: false };
-      await AuthService.getCurrentAuthenticatedUser().then(res => {
+      await authService.getCurrentAuthenticatedUser().then((res: any) => {
         if (res.status === 200 && res.user) {
           commit("updateIsLoggedIn", true);
           const loggedInUser = res.user;
