@@ -76,10 +76,9 @@
 import { defineComponent } from "vue";
 import ReportTable from "@/components/landingPage/ReportTable.vue";
 import PieChartDashCard from "@/components/landingPage/PieChartDashCard.vue";
-import EntityService from "@/services/EntityService";
 import { mapState } from "vuex";
 import { TTIriRef, RecentActivityItem, IriCount, DashboardLayout } from "im-library/dist/types/interfaces/Interfaces";
-import { Env, Vocabulary, Helpers } from "im-library";
+import { Vocabulary, Helpers } from "im-library";
 const { IM, RDF, RDFS } = Vocabulary;
 const {
   DataTypeCheckers: { isArrayHasLength, isObjectHasKeys },
@@ -124,7 +123,7 @@ export default defineComponent({
     async getRecentActivityDetails() {
       const storedActivity: RecentActivityItem[] = Object.assign([], this.recentLocalActivity);
       for (let activity of storedActivity) {
-        const result = await EntityService.getPartialEntity(activity.iri, [RDFS.LABEL, RDF.TYPE]);
+        const result = await this.$entityService.getPartialEntity(activity.iri, [RDFS.LABEL, RDF.TYPE]);
         if (isObjectHasKeys(result, [RDF.TYPE, RDFS.LABEL])) {
           activity.name = result[RDFS.LABEL];
           activity.type = result[RDF.TYPE].map((type: TTIriRef) => type.name).join(", ");
@@ -150,10 +149,10 @@ export default defineComponent({
       let action = "";
       const dateTime = new Date(activity.dateTime);
       switch (activity.app) {
-        case Env.VIEWER_URL:
+        case this.$env.VIEWER_URL:
           action = "Viewed";
           break;
-        case Env.EDITOR_URL:
+        case this.$env.EDITOR_URL:
           action = "Edited";
           break;
 
@@ -180,7 +179,7 @@ export default defineComponent({
     async getCardsData(): Promise<void> {
       const cards = [] as { name: string; description: string; inputData: IriCount; component: string }[];
       for (const config of this.configs) {
-        const result = await EntityService.getPartialEntity(config.iri, [RDFS.LABEL, RDFS.COMMENT, IM.STATS_REPORT_ENTRY]);
+        const result = await this.$entityService.getPartialEntity(config.iri, [RDFS.LABEL, RDFS.COMMENT, IM.STATS_REPORT_ENTRY]);
         if (!isObjectHasKeys(result)) return;
         const cardData = {
           name: result[RDFS.LABEL],
@@ -195,12 +194,12 @@ export default defineComponent({
 
     view(data?: any) {
       if (data) this.onRowSelect(data);
-      this.$directService.directTo(Env.VIEWER_URL, this.selected.iri, "concept");
+      this.$directService.directTo(this.$env.VIEWER_URL, this.selected.iri, "concept");
     },
 
     edit(data?: any) {
       if (data) this.onRowSelect(data);
-      this.$directService.directTo(Env.EDITOR_URL, this.selected.iri, "editor");
+      this.$directService.directTo(this.$env.EDITOR_URL, this.selected.iri, "editor");
     },
 
     showInfo(data?: any) {

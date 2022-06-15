@@ -85,16 +85,17 @@ import awsconfig from "./aws-exports";
 import axios from "axios";
 
 // IMLibrary imports
-import IMLibrary from "im-library";
 import "im-library/dist/style.css";
-import { AuthService, Helpers, Env, ConfigService, DirectService, SetService } from "im-library";
+import IMLibrary, { Helpers, Services } from "im-library";
 const {
   DataTypeCheckers: { isObjectHasKeys }
 } = Helpers;
+const { AuthService, ConfigService, DirectService, EntityService, Env, LoggerService, SetService } = Services;
 
 const authService = new AuthService(Auth);
 const configService = new ConfigService(axios);
 const directService = new DirectService(store);
+const entityService = new EntityService(axios);
 const setService = new SetService(axios);
 
 Amplify.configure(awsconfig);
@@ -169,9 +170,14 @@ const app = createApp(App)
 app.config.globalProperties.$authService = authService;
 app.config.globalProperties.$configService = configService;
 app.config.globalProperties.$directService = directService;
+app.config.globalProperties.$entityService = entityService;
+app.config.globalProperties.$env = Env;
+app.config.globalProperties.$loggerService = LoggerService;
 app.config.globalProperties.$setService = setService;
 
 const vm = app.mount("#app");
+
+export default vm;
 
 axios.interceptors.request.use(async request => {
   if (store.state.isLoggedIn && Env.API && request.url?.startsWith(Env.API)) {

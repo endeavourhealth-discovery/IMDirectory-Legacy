@@ -1,9 +1,8 @@
 import { createStore } from "vuex";
+import { FilterDefaultsConfig, EntityReferenceNode, Namespace, HistoryItem, RecentActivityItem } from "im-library/dist/types/interfaces/Interfaces";
+import { Models, Constants, Vocabulary, Helpers, Services } from "im-library";
 import { Auth } from "aws-amplify";
 import axios from "axios";
-import EntityService from "../services/EntityService";
-import { FilterDefaultsConfig, EntityReferenceNode, Namespace, HistoryItem, RecentActivityItem } from "im-library/dist/types/interfaces/Interfaces";
-import { Models, Constants, Vocabulary, Helpers, LoggerService, AuthService, ConfigService } from "im-library";
 const { IM, RDF, RDFS } = Vocabulary;
 const { Avatars } = Constants;
 const {
@@ -14,8 +13,10 @@ const {
 const {
   DataTypeCheckers: { isArrayHasLength, isObjectHasKeys }
 } = Helpers;
+const { AuthService, ConfigService, EntityService, LoggerService } = Services;
 const authService = new AuthService(Auth);
 const configService = new ConfigService(axios);
+const entityService = new EntityService(axios);
 
 export default createStore({
   // update stateType.ts when adding new state!
@@ -175,9 +176,9 @@ export default createStore({
     async fetchFilterSettings({ commit, state }) {
       const configs = await configService.getFilterDefaults();
       commit("updateFilterDefaults", configs);
-      const schemeOptions = await EntityService.getNamespaces();
-      const statusOptions = await EntityService.getEntityChildren(IM.STATUS);
-      const typeOptions = (await EntityService.getPartialEntities(state.filterDefaults.typeOptions, [RDFS.LABEL])).map(typeOption => {
+      const schemeOptions = await entityService.getNamespaces();
+      const statusOptions = await entityService.getEntityChildren(IM.STATUS);
+      const typeOptions = (await entityService.getPartialEntities(state.filterDefaults.typeOptions, [RDFS.LABEL])).map(typeOption => {
         return { "@id": typeOption["@id"], name: typeOption[RDFS.LABEL] };
       });
       commit("updateFilterOptions", {
@@ -197,7 +198,7 @@ export default createStore({
       commit("updateHierarchySelectedFilters", selectedSchemes);
     },
     async fetchSearchResults({ commit }, data: { searchRequest: Models.Search.SearchRequest; cancelToken: any }) {
-      const result = await EntityService.advancedSearch(data.searchRequest, data.cancelToken);
+      const result = await entityService.advancedSearch(data.searchRequest, data.cancelToken);
       if (result && isArrayHasLength(result)) {
         commit("updateSearchResults", result);
       } else {
